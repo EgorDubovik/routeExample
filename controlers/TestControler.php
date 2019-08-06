@@ -9,4 +9,8 @@
 		{
 			echo "Test";	
 		}
+
+		public function indexGET($id){
+			echo $id;
+		}
 	}

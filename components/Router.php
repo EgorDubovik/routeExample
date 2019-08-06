@@ -1,5 +1,6 @@
 <?php
 include_once ROOT."/components/Request.php";
+include_once ROOT."/components/Route.php";
 class Router
 {
    private static $routes = array();
@@ -7,11 +8,30 @@ class Router
    private static $route_helpfunc = array();
    
    public static function any($route,$classes,$help_func=null){
-      self::$routes[$route] = $classes;
-      if($help_func!=null){
-         self::$route_helpfunc[$help_func][]=$route;
-      }
+      // self::$routes[$route] = $classes;
+      // if($help_func!=null){
+      //    self::$route_helpfunc[$help_func][]=$route;
+      // }
+      $methods = array("GET","POST","DELETE","PUT","OPTION");
+      self::add($methods,$route,$classes);
    }
+
+   public static function get($route,$classes){
+      $methods = array("GET");
+      self::add($methods,$route,$classes);  
+   }
+
+   public static function post($route,$classes){
+      $methods = array("POST");
+      self::add($methods,$route,$classes);  
+   }
+
+   public static function add($methods,$route,$classes){
+      $routeObj = new Route($methods,$route,$classes);
+      foreach ($methods as $key => $method) {
+         self::$routes[$method][$route] = $routeObj;
+      }
+   } 
 
    public static function setHelpFunc($arrg,$func){
       self::$helper_func[$arrg]=$func;
@@ -27,37 +47,41 @@ class Router
       $request = new Request();
       //([A-Z,a-z,0-9]+)
       $url = $request->url;
-      foreach (self::$routes as $key => $value) {
+      $meth = $request->method;
+      $parametrs = array();
+      foreach (self::$routes[$meth] as $key => $value) {
          preg_match('#{([a-z,_,A-Z]+)}#', $key,$vars);
          $key = preg_replace('#{([a-z,_,A-Z]+)}#', '([A-Z,a-z,0-9]+)', $key);
          if(preg_match("#^$key$#", $url,$matches)){
-            $classes = explode("@", $value);
+            $classes = explode("@", $value->getAction());
             $kye_route = $key;
+            if(count($matches)>1){
+               for ($i=1; $i <= count($matches)-1; $i++) {
+                  $parametrs[] = $matches[$i];
+               }
+            }
          }
       }
 
       if(isset($classes)){
+         //self::dumb($parametrs);
+      //    $return = self::is_helpfunc($url);
 
-         $return = self::is_helpfunc($url);
-
-         if($return){
-            include_once ROOT."/controlers/".$classes[0].".php";
-            $class = new $classes[0]();
-            
-            if(count($matches)>1){
-               $class->{$classes[1]}($matches[1]);
-            }
-            else $class->{$classes[1]}();
-         } else {
-            header("Location: /login");
-         }
+         // if($return){
+         include_once ROOT."/controlers/".$classes[0].".php";
+         $class = new $classes[0]();
+         $action = $classes[1];
+         call_user_func_array(array($class,$action), $parametrs);   
+         //    if(count($matches)>1){
+         //       $class->{$classes[1]}($matches[1]);
+         //    }
+         //    else $class->{$classes[1]}();
+         // } else {
+         //    header("Location: /login");
+         // }
          
       } else {
-         
-         
-         
-         echo "page 404";
-         
+          echo "page 404";   
       }
    }
 
@@ -72,6 +96,12 @@ class Router
          }
       }
       return true;
+   }
+
+   private static function dumb($val){
+      echo "<per>";
+      var_dump($val);
+      echo "</per>";
    }
 }
 
