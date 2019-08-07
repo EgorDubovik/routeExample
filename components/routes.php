@@ -12,4 +12,7 @@ Router::setHelpFunc("auth",function(){
 
 Router::any("/","TestControler@indexAction");
 Router::get("/get/{id}","TestControler@indexGET");
+Router::get("/fun",function(){
+	echo "function";
+});
 Router::post("/post","TestControler@indexPOST");
